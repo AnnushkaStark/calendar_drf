@@ -10,7 +10,8 @@ class EventModel(models.Model):
 
     ## Attrs:
         - name: str - название события
-        - period: int - периодичность события в днях
+        - start_time: int - дата и время начала события Unix timestamp
+        - period: datetime - периодичность события в днях
         - task_id - идентификатор события (задача селери)
             для повторяющихся событий
     """
@@ -18,7 +19,6 @@ class EventModel(models.Model):
     name = models.CharField(max_length=100)
     start_time = models.DateTimeField()
     period = models.IntegerField()
-    task_id = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.name
