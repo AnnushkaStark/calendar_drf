@@ -12,7 +12,7 @@ from rest_framework.response import Response
 
 from .models import EventModel
 from .serializers import EventSerializer
-from tasks import create_repeating_events
+from .tasks import create_repeating_events
 
 
 class ReadEventsView(ListAPIView):
