@@ -113,7 +113,7 @@ class RemoveNextEventsView(APIView):
             )
         current_event.delete()
         deleted_count, _ = EventModel.objects.filter(
-            start_at__gt=current_event.start_time,
+            start_time__gt=current_event.start_time,
             period=current_event.period,
             name=current_event.name,
         ).delete()

@@ -8,7 +8,7 @@ class EventModel(models.Model):
 
     ## Attrs:
         - name: str - название события
-        - start_time: datetime - дата и время начала события Unix timestamp
+        - start_time: datetime - дата и время начала события
         - period: datetime - периодичность события в днях
     """
 
