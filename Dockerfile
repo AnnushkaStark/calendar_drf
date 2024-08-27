@@ -1,11 +1,21 @@
-FROM python:3.11-slim-buster
+# Используем официальный образ Python
+FROM python:3.11
 
-WORKDIR /app
+# Устанавливаем рабочую директорию
+WORKDIR /CalendarProject
 
+# Копируем requirements.txt и устанавливаем зависимости
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN apt-get update && apt-get install -y supervisor
 
+# Копируем весь проект в контейнер
 COPY . .
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "main_app.wsgi"]
+# Запускаем команду для миграции базы данных
+RUN python manage.py migrate
+
+# Открываем порт
+EXPOSE 8000
+
+# Запускаем сервер
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
