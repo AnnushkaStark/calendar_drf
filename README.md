@@ -31,3 +31,24 @@
   Получить в ответ список событий в указанный день (в списке указывать name и id события)
 
 # Запуск проекта
+
+* Установите зависимости:
+
+  docker-compose run --rm web pip install -r requirements.txt
+
+* Сгенерируйте миграции:
+
+  docker-compose exec web python manage.py makemigrations
+  docker-compose exec web python manage.py migrate
+
+* Запустите сервер и Redis:
+
+  docker-compose up
+
+## Важные моменты:
+
+* Для хранения данных о повторяющихся событиях используется Redis
+
+* Celery задача create_repeating_events создает повторяющиеся события асинхронно.
+
+* Тестирование проекта с использованием APITestCase

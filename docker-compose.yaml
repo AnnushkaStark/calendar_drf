@@ -1,0 +1,17 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./calendar_project:/app/calendar_project
+    command: python manage.py runserver 0.0.0.0:8000
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+# Добавьте следующую строку в docker-compose.yml
+volumes:
+  - ./calendar_project:/app/calendar_project

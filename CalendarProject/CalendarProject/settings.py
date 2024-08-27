@@ -126,9 +126,19 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-CELERY_BROKER_URL = 'redis://pressanybutton.ru:6379/10'
-CELERY_RESULT_BACKEND = 'redis://pressanybutton.ru:6379/10'
+CELERY_BROKER_URL = 'redis://localhost:6379'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379'
 CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCacheBackend',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
