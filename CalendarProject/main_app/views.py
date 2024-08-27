@@ -12,7 +12,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from .models import EventModel
-from .serializers import EventSerializer
+from .serializers import EventSerializer, EventCreateSerializer
 from .utils import (
     get_events_by_date,
     delete_repetitions_next,
@@ -43,7 +43,7 @@ class ReadEventsView(ListAPIView):
 
 class CreateEventView(CreateAPIView):
     queryset = EventModel.objects.all()
-    serializer_class = EventSerializer
+    serializer_class = EventCreateSerializer
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -55,7 +55,7 @@ class CreateEventView(CreateAPIView):
 
 class UpdateEventView(RetrieveUpdateAPIView):
     queryset = EventModel.objects.all()
-    serializer_class = EventSerializer
+    serializer_class = EventCreateSerializer
     lookup_field = "id"
 
     def get_object(self, *args, **kwargs):

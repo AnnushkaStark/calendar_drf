@@ -1,28 +1,13 @@
-version: '3.8'
+version: '3'
 
 services:
   web:
     build: .
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/CalendarProject
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
-  redis:
-    image: "redis:alpine"
-
-  celery:
-    build: .
-    command: celery -A CalendarProject worker --loglevel=info
-    volumes:
-      - .:/CalendarProject
     depends_on:
-      - redis
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - db
