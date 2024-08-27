@@ -12,16 +12,13 @@ class EventSerializer(serializers.ModelSerializer):
 
 
 class EventCreateSerializer(serializers.ModelSerializer):
-    period = serializers.IntegerField(allow_null=True)
-    recurrence_limit = serializers.DateTimeField
-
     def validate(self, data):
         if data.get("period") is not None:
-            if data.get("recurrence_limit") is None:
+            if data.get("reccurence_limit") is None:
                 raise ValidationError(
                     "recurrence_limit is required when period is None"
                 )
-
+            return data
         return data
 
     class Meta:
