@@ -12,7 +12,6 @@ from rest_framework.response import Response
 
 from .models import EventModel
 from .serializers import EventSerializer
-from .tasks import create_repeating_events
 
 
 class ReadEventsView(ListAPIView):
@@ -36,9 +35,6 @@ class CreateEventView(CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             event = serializer.save()
-            if event.period:
-                create_repeating_events.delay(event.id, event.start_time, event.period)
-
             return Response({"id": event.id}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
