@@ -22,14 +22,15 @@ class EventModel(models.Model):
     def __str__(self):
         return self.name
 
-    def get_repetitions(self):
+    def get_repetitions(self, date):
         """
-        функуия генерирующая даты повторений
+        функwия генерирующая даты повторений
         от даты начала события до даты лимита повторов
         """
         repetitions = []
-        date = self.start_time
-        while self.start_time < self.reccurence_limit:
-            repetitions.append(date)
-            date += timezone.timedelta(days=self.period)
-        return repetitions
+        if self.period:
+            date = self.start_time
+            while self.start_time < self.reccurence_limit:
+                repetitions.append(date)
+                date += timezone.timedelta(days=self.period)
+            return repetitions

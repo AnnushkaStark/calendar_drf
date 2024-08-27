@@ -1,3 +1,4 @@
+from datetime import datetime
 from rest_framework.views import APIView
 
 from django.shortcuts import get_object_or_404
@@ -12,6 +13,12 @@ from rest_framework.response import Response
 
 from .models import EventModel
 from .serializers import EventSerializer
+from .utils import (
+    get_events_by_date,
+    delete_repetitions_next,
+    check_found,
+    delete_repetition_one_by_date,
+)
 
 
 class ReadEventsView(ListAPIView):
@@ -21,9 +28,16 @@ class ReadEventsView(ListAPIView):
         year = self.kwargs["year"]
         month = self.kwargs["month"]
         day = self.kwargs["day"]
-        queryset = EventModel.objects.filter(
-            start_time__year=year, start_time__month=month, start_time__day=day
+        current_date = datetime.now().date()
+        found_date = datetime(year=year, month=month, day=day)
+        queryset = []
+        found_events = get_events_by_date(
+            current_date=current_date, found_date=found_date
         )
+        for event in found_events:
+            repetitions = event.get_repetitions(event.start_time)
+            if found_date in repetitions:
+                queryset.append({"name": event.name, "start_time": found_date})
         return queryset
 
 
@@ -49,16 +63,14 @@ class UpdateEventView(RetrieveUpdateAPIView):
         month = self.kwargs["month"]
         day = self.kwargs["day"]
         event_id = self.kwargs["id"]
+        found_date = datetime(year=year, month=month, day=day)
         try:
-            event = EventModel.objects.get(
-                id=event_id,
-                start_time__year=year,
-                start_time__month=month,
-                start_time__day=day,
-            )
+            found_event = check_found(event_id=event_id, found_date=found_date)
         except EventModel.DoesNotExist:
-            raise get_object_or_404(EventModel, id=event_id)
-        return event
+            return Response(
+                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        return found_event
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -80,41 +92,42 @@ class RemoveEventView(DestroyAPIView):
         month = self.kwargs["month"]
         day = self.kwargs["day"]
         event_id = self.kwargs["id"]
+        found_date = datetime(year=year, month=month, day=day)
         try:
-            event = EventModel.objects.get(
-                id=event_id,
-                start_time__year=year,
-                start_time__month=month,
-                start_time__day=day,
-            )
+            found_event = check_found(event_id=event_id, found_date=found_date)
+            delete_repetition_one_by_date(event=found_event, found_date=found_date)
         except EventModel.DoesNotExist:
-            raise get_object_or_404(EventModel, id=event_id)
-
-        return event
+            return Response(
+                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        return found_event
 
 
 class RemoveNextEventsView(APIView):
     def post(self, request, id, year, month, day):
         try:
-            current_event = EventModel.objects.get(
-                id=id,
-                start_time__year=year,
-                start_time__month=month,
-                start_time__day=day,
-            )
+            found_date = datetime(year=year, month=month, day=day)
+            current_event = check_found(found_date=found_date, event_id=id)
         except EventModel.DoesNotExist:
             return Response(
                 {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
             )
+        delete_repetitions_next(event=current_event, found_date=found_date)
         current_event.delete()
-        deleted_count, _ = EventModel.objects.filter(
-            start_time__gt=current_event.start_time,
-            period=current_event.period,
-            name=current_event.name,
-        ).delete()
-        return Response(
-            {
-                "message": f"Successfully deleted {deleted_count + 1} events starting from the specified date."
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response(status=status.HTTP_200_OK)
+
+
+class RemoveEventFullView(DestroyAPIView):
+    queryset = EventModel.objects.all()
+    serializer_class = EventSerializer
+    lookup_field = "id"
+
+    def get_object(self, *args, **kwargs):
+        event_id = self.kwargs["id"]
+        try:
+            found_event = EventModel.objects.get(id=event_id)
+        except EventModel.DoesNotExist:
+            return Response(
+                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+        return found_event

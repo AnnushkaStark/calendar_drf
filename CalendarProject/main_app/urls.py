@@ -5,6 +5,7 @@ from .views import (
     RemoveEventView,
     RemoveNextEventsView,
     CreateEventView,
+    RemoveEventFullView,
 )
 
 urlpatterns = [
@@ -29,4 +30,5 @@ urlpatterns = [
         name="remove_next_events",
     ),
     path("crate/", CreateEventView.as_view(), name="create_event"),
+    path("remove_full/<int:id>/", RemoveEventFullView.as_view(), name="remove_full"),
 ]
