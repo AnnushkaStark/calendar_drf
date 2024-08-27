@@ -1,7 +1,5 @@
 from django.db import models
-
-from django.db import models
-from django_celery_beat.models import PeriodicTask, IntervalSchedule
+from django.utils import timezone
 
 
 class EventModel(models.Model):
@@ -10,10 +8,8 @@ class EventModel(models.Model):
 
     ## Attrs:
         - name: str - название события
-        - start_time: int - дата и время начала события Unix timestamp
+        - start_time: datetime - дата и время начала события Unix timestamp
         - period: datetime - периодичность события в днях
-        - task_id - идентификатор события (задача селери)
-            для повторяющихся событий
     """
 
     name = models.CharField(max_length=100)

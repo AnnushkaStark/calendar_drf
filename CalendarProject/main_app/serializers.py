@@ -1,9 +1,10 @@
-from rest_framework.serializers import ModelSerializer
+from django.utils import timezone
+from rest_framework import serializers
 
 from .models import EventModel
 
 
-class EventSerializer(ModelSerializer):
+class EventSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EventModel

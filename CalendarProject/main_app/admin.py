@@ -10,6 +10,5 @@ class EventModelAdmin(admin.ModelAdmin):
         "start_time",
         "period",
     )
-    ordering = ["start_time"]
     search_fields = ["name"]
     search_help_text = "Поиск по названию"

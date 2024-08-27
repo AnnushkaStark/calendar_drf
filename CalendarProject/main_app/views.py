@@ -1,3 +1,4 @@
+from datetime import datetime
 from rest_framework.views import APIView
 
 from django.shortcuts import get_object_or_404
@@ -18,12 +19,12 @@ from .tasks import create_repeating_events
 class ReadEventsView(ListAPIView):
     serializer_class = EventSerializer
 
-    def get_queryset(self):
+    def get_queryset(self, *args, **kwargs):
         year = self.kwargs["year"]
         month = self.kwargs["month"]
         day = self.kwargs["day"]
         queryset = EventModel.objects.filter(
-            date__year=year, date__month=month, date__day=day
+            start_time__year=year, start_time__month=month, start_time__day=day
         )
         return queryset
 
@@ -48,7 +49,7 @@ class UpdateEventView(RetrieveUpdateAPIView):
     serializer_class = EventSerializer
     lookup_field = "id"
 
-    def get_object(self):
+    def get_object(self, *args, **kwargs):
         year = self.kwargs["year"]
         month = self.kwargs["month"]
         day = self.kwargs["day"]
@@ -56,9 +57,9 @@ class UpdateEventView(RetrieveUpdateAPIView):
         try:
             event = EventModel.objects.get(
                 id=event_id,
-                start_at__year=year,
-                start_at__month=month,
-                start_at__day=day,
+                start_time__year=year,
+                start_time__month=month,
+                start_time__day=day,
             )
         except EventModel.DoesNotExist:
             raise get_object_or_404(EventModel, id=event_id)
@@ -87,9 +88,9 @@ class RemoveEventView(DestroyAPIView):
         try:
             event = EventModel.objects.get(
                 id=event_id,
-                start_at__year=year,
-                start_at__month=month,
-                start_at__day=day,
+                start_time__year=year,
+                start_time__month=month,
+                start_time__day=day,
             )
         except EventModel.DoesNotExist:
             raise get_object_or_404(EventModel, id=event_id)
@@ -101,7 +102,10 @@ class RemoveNextEventsView(APIView):
     def post(self, request, id, year, month, day):
         try:
             current_event = EventModel.objects.get(
-                id=id, start_at__year=year, start_at__month=month, start_at__day=day
+                id=id,
+                start_time__year=year,
+                start_time__month=month,
+                start_time__day=day,
             )
         except EventModel.DoesNotExist:
             return Response(
