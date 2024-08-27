@@ -12,6 +12,5 @@ services:
     ports:
       - "6379:6379"
 
-# Добавьте следующую строку в docker-compose.yml
 volumes:
   - ./calendar_project:/app/calendar_project
