@@ -9,7 +9,7 @@ class EventModel(models.Model):
     ## Attrs:
         - name: str - название события
         - start_time: datetime - дата и время начала события
-        - period: IntegerChoices - периодичность события в днях
+        - period: int - периодичность события в днях
         - reccurence_limit: datetime - до какой даты событе должно повторяться
 
     """
@@ -24,11 +24,11 @@ class EventModel(models.Model):
 
     def get_repetitions(self, date):
         """
-        функwия генерирующая даты повторений
+        функция генерирующая даты повторений
         от даты начала события до даты лимита повторов
         """
         repetitions = []
-        if self.period:
+        if self.period and self.reccurence_limit:
             date = self.start_time
             while self.start_time < self.reccurence_limit:
                 repetitions.append(date)
