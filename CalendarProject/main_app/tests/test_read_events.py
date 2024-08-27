@@ -1,6 +1,6 @@
-import pytest
 from django.urls import reverse
 from rest_framework.test import APITestCase
+
 from main_app.models import EventModel
 from datetime import datetime, timedelta
 
