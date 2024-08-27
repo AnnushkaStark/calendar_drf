@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-n4^gz9+sy98v+1@djw7v9yhk=7n8=nbmpg4$20vi1(-yr#)svg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -108,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'ru-ru'
 
-TIME_ZONE = 'Europe/Moscow'
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
@@ -132,13 +132,6 @@ CELERY_ACCEPT_CONTENT = ['application/json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCacheBackend',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
-    }
-}
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 6379
