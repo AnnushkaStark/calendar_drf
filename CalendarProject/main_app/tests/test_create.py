@@ -1,16 +1,23 @@
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
-from main_app.models import EventModel
+from main_app.models.event import EventModel
 from datetime import datetime, timedelta
 
 
 class TestCreate(APITestCase):
     url = reverse("create_event")
-    data_with_priod = {
+    data_with_period = {
         "name": "Event with period",
         "start_time": (datetime.now() + timedelta(days=1)).isoformat(),
         "period": 7,
+        "reccurence_limit": (datetime.now() + timedelta(days=5)).isoformat(),
+    }
+
+    data_with_invalid_period = {
+        "name": "Event with invalid period",
+        "start_time": (datetime.now() + timedelta(days=1)).isoformat(),
+        "period": -7,
         "reccurence_limit": (datetime.now() + timedelta(days=5)).isoformat(),
     }
     data_without_period = {
@@ -26,7 +33,7 @@ class TestCreate(APITestCase):
     }
 
     def test_create_event_with_period(self):
-        response = self.client.post(self.url, data=self.data_with_priod)
+        response = self.client.post(self.url, data=self.data_with_period)
         assert response.status_code == 201
         created_event = EventModel.objects.get(
             name="Event with period",
@@ -52,6 +59,14 @@ class TestCreate(APITestCase):
         response = self.client.post(self.url, self.invalid_data_with_period)
         assert response.status_code == 400
         not_created_event = EventModel.objects.filter(
-            name=self.invalid_data["name"]
+            name=self.invalid_data_with_period["name"]
+        ).count()
+        assert not_created_event == 0
+
+    def test_create_event_with_period_less_zero(self):
+        response = self.client.post(self.url, self.data_with_invalid_period)
+        assert response.status_code == 400
+        not_created_event = EventModel.objects.filter(
+            name=self.data_with_invalid_period["name"]
         ).count()
         assert not_created_event == 0
