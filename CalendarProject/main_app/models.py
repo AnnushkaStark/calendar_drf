@@ -24,4 +24,4 @@ class EventModel(models.Model):
 
 
 class EventDate(models.Model):
-    dete = models.DateTimeField()
+    date = models.DateTimeField()

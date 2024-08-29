@@ -22,10 +22,11 @@ def get_repetitions(event: EventModel) -> List[datetime]:
         return repetitions
 
 
-def crete_repeat_dates(event: EventModel, dates: List[datetime]) -> List[EventDate]:
-    for _ in range(len(dates)):
-        event_dates = EventDate.objects.bulk_create(dates, batch_size=1000)
-        return event_dates
+def crete_repeat_dates(event: EventModel, dates: List[datetime]|None) -> List[EventDate]:
+    if dates:
+        for _ in range(len(dates)):
+            event_dates = EventDate.objects.bulk_create(dates, batch_size=1000)
+            return event_dates
 
 
 def check_found(found_date: datetime, event_id: int) -> Optional[EventModel]:
@@ -36,8 +37,8 @@ def check_found(found_date: datetime, event_id: int) -> Optional[EventModel]:
     found_event = (
         EventModel.objects.prefetch_related("dates")
         .filter(
-            Q(dates__contain=found_date, id=event_id)
-            | Q(start_time=found_date, id=event_id)
+            Q(dates__date=found_date.date(), id=event_id)
+            |Q(start_time=found_date.date(), id=event_id)
         )
         .first()
     )
@@ -48,9 +49,9 @@ def check_found(found_date: datetime, event_id: int) -> Optional[EventModel]:
 def read_events_by_date(found_date: datetime) -> List[dict]:
     found_events = (
         EventModel.objects.prefetch_related("dates")
-        .filter(Q(dates__contain=found_date) | Q(start_time=found_date))
-        .all()
-    )
+        .filter(Q (start_time=found_date.date())| Q(dates__date=found_date.date()))
+    ).all()
+    print(found_events)
     queryset = []
     for event in found_events:
         if event.start_time == found_date:

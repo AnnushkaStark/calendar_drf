@@ -21,7 +21,7 @@ class ReadEventsView(APIView):
     def get(self, *args, **kwargs):
         found_date = get_date(self.kwargs)
         found_events = read_events_by_date(found_date=found_date)
-        return found_events
+        return Response({"events":found_events})
 
 
 class CreateEventView(APIView):
@@ -29,7 +29,7 @@ class CreateEventView(APIView):
     serializer_class = EventCreateSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             event = serializer.save()
             repetitions = get_repetitions(event=event)
@@ -51,12 +51,11 @@ class UpdateEventView(APIView):
         found_event = check_found(event_id=event_id, found_date=found_date)
         if found_event:
             instance = found_event
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer = self.serializer_class(instance, data=request.data, partial=True)
             if serializer.is_valid():
-                self.perform_update(serializer)
+                serializer.save()
                 return Response(serializer.data)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
@@ -73,6 +72,7 @@ class RemoveEventView(APIView):
             found_event.dates.remove(found_event)
             found_event.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        print(found_event)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 
