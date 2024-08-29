@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from main_app.models.event import EventModel
+from main_app.models import EventModel
 
 
 @admin.register(EventModel)

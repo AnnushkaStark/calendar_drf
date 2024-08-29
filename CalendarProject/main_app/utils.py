@@ -1,46 +1,76 @@
 from typing import List, Optional
 from datetime import datetime
 
-from .models import EventModel
+from django.db.models import Q
+from django.utils import timezone
 
 
-def get_events_by_date(
-    current_date: datetime, found_date: datetime
-) -> List[EventModel]:
-    if found_date == current_date:
-        found_events = EventModel.objects.filter(start_time=found_date)
-        return found_events
-    if found_date > current_date:
-        found_events = EventModel.objects.filter(
-            start_time__gte=current_date, start_time__lte=found_date
-        )
-        return found_events
-    if found_date < current_date:
-        found_events = EventModel.objects.filter(
-            start_time__gte=found_date, start_time__lte=current_date
-        )
-        return found_events
+from .models import EventModel, EventDate
 
 
-def delete_repetitions_next(event: EventModel, found_date: datetime) -> List:
-    repetitions = event.get_repetitions(event.start_time)
-    for date in repetitions:
-        if date > found_date:
-            repetitions.remove(date)
-    return repetitions
+def get_repetitions(event: EventModel) -> List[datetime]:
+    """
+    Генерация дат повторений
+    от даты начала события до даты лимита повторов
+    """
+    repetitions = []
+    if event.period and event.reccurence_limit:
+        date = event.start_time
+        while (date + timezone.timedelta(days=event.period)) <= event.reccurence_limit:
+            repetitions.append(date)
+            date += timezone.timedelta(days=event.period)
+        return repetitions
 
 
-def delete_repetition_one_by_date(event: EventModel, found_date: datetime) -> List:
-    repetitions = event.get_repetitions(event.start_time)
-    repetitions = repetitions.remove(found_date)
-    return repetitions
+def crete_repeat_dates(event: EventModel, dates: List[datetime]) -> List[EventDate]:
+    for _ in range(len(dates)):
+        event_dates = EventDate.objects.bulk_create(dates, batch_size=1000)
+        return event_dates
 
 
 def check_found(found_date: datetime, event_id: int) -> Optional[EventModel]:
-    if found_event := EventModel.objects.get(id=event_id):
-        if found_event.period:
-            repetitions = found_event.get_repetitions(found_event.start_time)
-            if found_date in repetitions:
-                return found_event
-        if found_event.start_time == found_date:
-            return found_event
+    """
+    Проверка найденного события тк возможен не только выбора даты создание
+    события но и одной из дат его повторов
+    """
+    found_event = (
+        EventModel.objects.prefetch_related("dates")
+        .filter(
+            Q(dates__contain=found_date, id=event_id)
+            | Q(start_time=found_date, id=event_id)
+        )
+        .first()
+    )
+    if found_event:
+        return found_event
+
+
+def read_events_by_date(found_date: datetime) -> List[dict]:
+    found_events = (
+        EventModel.objects.prefetch_related("dates")
+        .filter(Q(dates__contain=found_date) | Q(start_time=found_date))
+        .all()
+    )
+    queryset = []
+    for event in found_events:
+        if event.start_time == found_date:
+            queryset.append({"neme": event.name, "start_time": event.start_time})
+        queryset.append({"neme": event.name, "start_time": found_date})
+    return queryset
+
+
+def get_date(data: dict) -> datetime:
+    """
+    получение даты из **kwargs эндпонйтов
+    """
+    year = data["year"]
+    month = data["month"]
+    day = data["day"]
+    return datetime(year=year, month=month, day=day)
+
+
+def remove_multi(found_date: datetime) -> None:
+    deletd_dates = EventModel.objects.prefetch_related("dates").delete(
+        dates__gte=found_date
+    )
+    return deletd_dates

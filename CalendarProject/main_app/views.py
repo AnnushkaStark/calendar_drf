@@ -1,47 +1,30 @@
-from datetime import datetime
 from rest_framework.views import APIView
-
-from django.shortcuts import get_object_or_404
-from rest_framework.generics import (
-    CreateAPIView,
-    RetrieveUpdateAPIView,
-    ListAPIView,
-    DestroyAPIView,
-)
+from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.response import Response
 
 from .models import EventModel
-from .serializers import EventSerializer, EventCreateSerializer
+from .serializers import EventSerializer, EventCreateSerializer, UpdateEventSerielizer
 from .utils import (
-    get_events_by_date,
-    delete_repetitions_next,
+    get_repetitions,
+    get_date,
+    crete_repeat_dates,
+    read_events_by_date,
     check_found,
-    delete_repetition_one_by_date,
+    remove_multi,
 )
 
 
-class ReadEventsView(ListAPIView):
+class ReadEventsView(APIView):
     serializer_class = EventSerializer
 
-    def get_queryset(self, *args, **kwargs):
-        year = self.kwargs["year"]
-        month = self.kwargs["month"]
-        day = self.kwargs["day"]
-        current_date = datetime.now().date()
-        found_date = datetime(year=year, month=month, day=day)
-        queryset = []
-        found_events = get_events_by_date(
-            current_date=current_date, found_date=found_date
-        )
-        for event in found_events:
-            repetitions = event.get_repetitions(event.start_time)
-            if found_date in repetitions:
-                queryset.append({"name": event.name, "start_time": found_date})
-        return queryset
+    def get(self, *args, **kwargs):
+        found_date = get_date(self.kwargs)
+        found_events = read_events_by_date(found_date=found_date)
+        return found_events
 
 
-class CreateEventView(CreateAPIView):
+class CreateEventView(APIView):
     queryset = EventModel.objects.all()
     serializer_class = EventCreateSerializer
 
@@ -49,75 +32,62 @@ class CreateEventView(CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             event = serializer.save()
-            return Response({"id": event.id}, status=status.HTTP_201_CREATED)
+            repetitions = get_repetitions(event=event)
+            crete_repeat_dates(event=event, dates=repetitions)
+            return Response(
+                {"id": event.id, "name": event.name}, status=status.HTTP_201_CREATED
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UpdateEventView(RetrieveUpdateAPIView):
+class UpdateEventView(APIView):
     queryset = EventModel.objects.all()
-    serializer_class = EventCreateSerializer
+    serializer_class = UpdateEventSerielizer
     lookup_field = "id"
 
-    def get_object(self, *args, **kwargs):
-        year = self.kwargs["year"]
-        month = self.kwargs["month"]
-        day = self.kwargs["day"]
+    def post(self, request, *args, **kwargs):
         event_id = self.kwargs["id"]
-        found_date = datetime(year=year, month=month, day=day)
-        try:
-            found_event = check_found(event_id=event_id, found_date=found_date)
-        except EventModel.DoesNotExist:
-            return Response(
-                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        return found_event
-
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        if serializer.is_valid():
-            self.perform_update(serializer)
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        found_date = get_date(self.kwargs)
+        found_event = check_found(event_id=event_id, found_date=found_date)
+        if found_event:
+            instance = found_event
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            if serializer.is_valid():
+                self.perform_update(serializer)
+                return Response(serializer.data)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class RemoveEventView(DestroyAPIView):
+class RemoveEventView(APIView):
     queryset = EventModel.objects.all()
     serializer_class = EventSerializer
     lookup_field = "id"
 
-    def get_object(self):
-        year = self.kwargs["year"]
-        month = self.kwargs["month"]
-        day = self.kwargs["day"]
+    def delete(self, *args, **kwargs):
         event_id = self.kwargs["id"]
-        found_date = datetime(year=year, month=month, day=day)
-        try:
-            found_event = check_found(event_id=event_id, found_date=found_date)
-            delete_repetition_one_by_date(event=found_event, found_date=found_date)
-        except EventModel.DoesNotExist:
-            return Response(
-                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        return found_event
+        found_date = get_date(self.kwargs)
+        found_event = check_found(event_id=event_id, found_date=found_date)
+        if found_event:
+            found_event.dates.remove(found_event)
+            found_event.save()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class RemoveNextEventsView(APIView):
-    def post(self, request, id, year, month, day):
-        try:
-            found_date = datetime(year=year, month=month, day=day)
-            current_event = check_found(found_date=found_date, event_id=id)
-        except EventModel.DoesNotExist:
-            return Response(
-                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        delete_repetitions_next(event=current_event, found_date=found_date)
-        current_event.delete()
-        return Response(status=status.HTTP_200_OK)
+    def post(self, request, *args, **kwargs):
+        event_id = kwargs["id"]
+        found_date = get_date(self.kwargs)
+        found_event = check_found(event_id=event_id, found_date=found_date)
+        if found_event:
+            remove_multi(found_date=found_date)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class RemoveEventFullView(DestroyAPIView):
+class RemoveEventFullView(APIView):
     queryset = EventModel.objects.all()
     serializer_class = EventSerializer
     lookup_field = "id"
@@ -127,7 +97,6 @@ class RemoveEventFullView(DestroyAPIView):
         try:
             found_event = EventModel.objects.get(id=event_id)
         except EventModel.DoesNotExist:
-            return Response(
-                {"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-        return found_event
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        found_event.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
